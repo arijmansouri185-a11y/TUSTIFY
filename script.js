@@ -1,516 +1,514 @@
+/* =========================================================
+   TUSTIFY — Verify Before You Trust
+   Main JavaScript
+========================================================= */
+
+
+/* =========================================================
+   USER DATA
+========================================================= */
+
+let user = JSON.parse(localStorage.getItem("tustifyUser")) || {
+  name: "Guest",
+  xp: 0,
+  completedChallenges: [],
+  badges: []
+};
+
+
+/* =========================================================
+   CHALLENGES DATA
+========================================================= */
+
+const challenges = {
+  "1": {
+    title: "Real or Fake?",
+    question:
+      "لقيت خبر على Social Media يقول: 'Scientists discovered a new planet yesterday'. شنوّة أول خطوة؟",
+    options: [
+      "نشارك الخبر بسرعة",
+      "نبحث عن مصدر موثوق يؤكد الخبر",
+      "نصدق الخبر خاطر فيه كلمة Scientists"
+    ],
+    answer: 1,
+    xp: 100
+  },
+
+  "2": {
+    title: "Trust the Link?",
+    question:
+      "وصلك رابط يطلب منك تسجيل الدخول لحسابك. شنوّة تعمل؟",
+    options: [
+      "ندخل معلوماتي مباشرة",
+      "نتأكد من عنوان الموقع والمصدر قبل الدخول",
+      "نبعث الرابط لأصحابي"
+    ],
+    answer: 1,
+    xp: 150
+  },
+
+  "3": {
+    title: "Think Twice",
+    question:
+      "صورة منتشرة وتقول إنها من حدث وقع اليوم. شنوّة أفضل تصرف؟",
+    options: [
+      "نصدقها لأنها صورة",
+      "نبحث عن المصدر والتاريخ والسياق",
+      "نشاركها قبل ما تختفي"
+    ],
+    answer: 1,
+    xp: 200
+  }
+};
+
+
+/* =========================================================
+   SAVE USER
+========================================================= */
+
+function saveUser() {
+  localStorage.setItem(
+    "tustifyUser",
+    JSON.stringify(user)
+  );
+}
+
+
+/* =========================================================
+   GET USER LEVEL
+========================================================= */
+
+function getLevel(xp) {
+  if (xp >= 1500) return 5;
+  if (xp >= 900) return 4;
+  if (xp >= 500) return 3;
+  if (xp >= 200) return 2;
+  return 1;
+}
+
+
+/* =========================================================
+   UPDATE BADGES
+========================================================= */
+
+function updateBadges() {
+
+  const badges = [];
+
+  if (user.completedChallenges.length >= 1) {
+    badges.push("Verification Rookie");
+  }
+
+  if (user.completedChallenges.length >= 2) {
+    badges.push("Fact Checker");
+  }
+
+  if (user.completedChallenges.length >= 3) {
+    badges.push("Trust Defender");
+  }
+
+  if (user.xp >= 300) {
+    badges.push("Critical Thinker");
+  }
+
+  if (user.xp >= 450) {
+    badges.push("TUSTIFY Master");
+  }
+
+  user.badges = badges;
+}
+
+
+/* =========================================================
+   UPDATE PROFILE
+========================================================= */
+
+function updateProfile() {
+
+  const xpElements =
+    document.querySelectorAll("[data-xp]");
+
+  const levelElements =
+    document.querySelectorAll("[data-level]");
+
+  const badgeElements =
+    document.querySelectorAll("[data-badges]");
+
+  const challengeElements =
+    document.querySelectorAll("[data-completed]");
+
+  const progressElements =
+    document.querySelectorAll("[data-progress]");
+
+  const level = getLevel(user.xp);
+
+  let progress = 0;
+
+  if (level === 1) {
+    progress = (user.xp / 200) * 100;
+  } else if (level === 2) {
+    progress = ((user.xp - 200) / 300) * 100;
+  } else if (level === 3) {
+    progress = ((user.xp - 500) / 400) * 100;
+  } else if (level === 4) {
+    progress = ((user.xp - 900) / 600) * 100;
+  } else {
+    progress = 100;
+  }
+
+  progress = Math.max(
+    0,
+    Math.min(100, progress)
+  );
+
+  xpElements.forEach(element => {
+    element.textContent = user.xp;
+  });
+
+  levelElements.forEach(element => {
+    element.textContent = level;
+  });
+
+  badgeElements.forEach(element => {
+    element.textContent = user.badges.length;
+  });
+
+  challengeElements.forEach(element => {
+    element.textContent =
+      user.completedChallenges.length;
+  });
+
+  progressElements.forEach(element => {
+    element.style.width = progress + "%";
+  });
+
+
+  /* Update user name */
+
+  document
+    .querySelectorAll("[data-user-name]")
+    .forEach(element => {
+      element.textContent = user.name;
+    });
+
+
+  /* Update streak */
+
+  document
+    .querySelectorAll("[data-streak]")
+    .forEach(element => {
+      element.textContent =
+        user.completedChallenges.length;
+    });
+}
+
+
+/* =========================================================
+   PAGE LOAD
+========================================================= */
+
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* =========================
-     TUSTIFY - MAIN SETTINGS
-     ========================= */
+  updateBadges();
+  updateProfile();
 
-  let user = JSON.parse(localStorage.getItem("tustifyUser")) || {
-    name: "Guest",
-    xp: 0,
-    completedChallenges: [],
-    badges: []
-  };
-
-  let selectedType = "news";
-
-  const lessons = {
-    "fake-news": {
-      title: "Fake News",
-      text: "قبل ما تصدق خبر، شوف المصدر، التاريخ، الكاتب، وهل مصادر أخرى موثوقة تقول نفس الشيء."
-    },
-    "phishing": {
-      title: "Phishing",
-      text: "التصيد يحاول يخليك تضغط على رابط أو تعطي معلومات. تحقق دائما من الرابط والمرسل قبل أي تفاعل."
-    },
-    "ai": {
-      title: "AI Content",
-      text: "المحتوى المصنوع بالذكاء الاصطناعي يمكن أن يبدو حقيقيا. لا تعتمد على الصورة أو النص وحده، وابحث عن مصادر مستقلة."
-    },
-    "images": {
-      title: "Misleading Images",
-      text: "الصورة يمكن تكون حقيقية لكن مستعملة خارج سياقها. حاول معرفة مصدرها وتاريخها والسياق الأصلي."
-    },
-    "sources": {
-      title: "Reliable Sources",
-      text: "المصدر الموثوق يكون واضحا، قابلا للتحقق، ويعتمد على أدلة أو مصادر يمكن الرجوع إليها."
-    },
-    "critical-thinking": {
-      title: "Critical Thinking",
-      text: "اسأل: شكون قالها؟ شنوّة الدليل؟ هل توجد مصادر أخرى؟ وهل يمكن أن يكون هناك تفسير مختلف؟"
-    }
-  };
-
-  const challenges = {
-    "1": {
-      title: "Real or Fake?",
-      question: "لقيت خبر على Social Media يقول: 'Scientists discovered a new planet yesterday'. شنوّة أول خطوة؟",
-      options: [
-        "نشارك الخبر بسرعة",
-        "نبحث عن مصدر موثوق يؤكد الخبر",
-        "نصدق الخبر خاطر فيه كلمة Scientists"
-      ],
-      answer: 1,
-      xp: 100
-    },
-
-    "2": {
-      title: "Trust the Link?",
-      question: "وصلك رابط يطلب منك تسجيل الدخول لحسابك. شنوّة تعمل؟",
-      options: [
-        "ندخل معلوماتي مباشرة",
-        "نتأكد من عنوان الموقع والمصدر قبل الدخول",
-        "نبعث الرابط لأصحابي"
-      ],
-      answer: 1,
-      xp: 150
-    },
-
-    "3": {
-      title: "Think Twice",
-      question: "صورة منتشرة وتقول إنها من حدث وقع اليوم. شنوّة أفضل تصرف؟",
-      options: [
-        "نصدقها لأنها صورة",
-        "نبحث عن المصدر والتاريخ والسياق",
-        "نشاركها قبل ما تختفي"
-      ],
-      answer: 1,
-      xp: 200
-    }
-  };
+});
 
 
-  /* =========================
-     SAVE USER
-     ========================= */
+/* =========================================================
+   NAVIGATION
+========================================================= */
 
-  function saveUser() {
-    localStorage.setItem("tustifyUser", JSON.stringify(user));
-  }
+document
+  .querySelectorAll("a[href^='#']")
+  .forEach(link => {
 
+    link.addEventListener("click", function (event) {
 
-  /* =========================
-     NAVIGATION
-     ========================= */
+      const targetId =
+        this.getAttribute("href");
 
-  document.querySelectorAll('a[href^="#"]').forEach(link => {
-    link.addEventListener("click", event => {
-      const target = document.querySelector(link.getAttribute("href"));
-
-      if (target) {
-        event.preventDefault();
-
-        target.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      }
-    });
-  });
-
-
-  /* =========================
-     DARK MODE
-     ========================= */
-
-  const themeButton = document.querySelector(".theme-toggle");
-
-  const savedTheme = localStorage.getItem("tustifyTheme");
-
-  if (savedTheme === "dark") {
-    document.body.classList.add("dark");
-  }
-
-  if (themeButton) {
-    themeButton.addEventListener("click", () => {
-
-      document.body.classList.toggle("dark");
-
-      const isDark = document.body.classList.contains("dark");
-
-      localStorage.setItem(
-        "tustifyTheme",
-        isDark ? "dark" : "light"
-      );
-
-      themeButton.textContent = isDark ? "☀️" : "🌙";
-    });
-
-    themeButton.textContent =
-      document.body.classList.contains("dark") ? "☀️" : "🌙";
-  }
-
-
-  /* =========================
-     HERO BUTTONS
-     ========================= */
-
-  document.querySelectorAll('a[href="#verify"]').forEach(button => {
-    button.addEventListener("click", () => {
-      setTimeout(() => {
-        document.getElementById("verifyInput")?.focus();
-      }, 500);
-    });
-  });
-
-
-  /* =========================
-     VERIFY TYPES
-     ========================= */
-
-  const verifyTypes = document.querySelectorAll(".verify-type");
-
-  verifyTypes.forEach(button => {
-
-    button.addEventListener("click", () => {
-
-      verifyTypes.forEach(btn =>
-        btn.classList.remove("active")
-      );
-
-      button.classList.add("active");
-
-      selectedType = button.dataset.type || "news";
-
-      const input = document.getElementById("verifyInput");
-
-      if (!input) return;
-
-      const placeholders = {
-        news: "Paste a news headline, claim or text here...",
-        website: "Paste a website link here...",
-        image: "Describe the image or paste its context here...",
-        message: "Paste the message you received here..."
-      };
-
-      input.placeholder =
-        placeholders[selectedType] ||
-        placeholders.news;
-    });
-
-  });
-
-
-  /* =========================
-     VERIFY ENGINE
-     ========================= */
-
-  const verifyButton = document.getElementById("verifyButton");
-
-  if (verifyButton) {
-
-    verifyButton.addEventListener("click", () => {
-
-      const input = document.getElementById("verifyInput");
-      const result = document.getElementById("verifyResult");
-      const title = document.getElementById("resultTitle");
-      const text = document.getElementById("resultText");
-
-      if (!input || !result || !title || !text) return;
-
-      const content = input.value.trim();
-
-      if (!content) {
-        title.textContent = "Please enter something to verify";
-        text.textContent =
-          "Add a claim, link, image context, or message first.";
-        result.classList.add("show");
+      if (
+        !targetId ||
+        targetId === "#"
+      ) {
         return;
       }
 
-      const suspiciousWords = [
-        "urgent",
-        "100% guaranteed",
-        "you won",
-        "click now",
-        "act now",
-        "free money",
-        "breaking",
-        "secret",
-        "guaranteed",
-        "password"
-      ];
+      const target =
+        document.querySelector(targetId);
 
-      const lower = content.toLowerCase();
+      if (!target) return;
 
-      const suspicious =
-        suspiciousWords.some(word =>
-          lower.includes(word)
-        );
+      event.preventDefault();
 
-      if (suspicious) {
-
-        title.textContent =
-          "⚠️ Potentially Misleading";
-
-        text.textContent =
-          "This content contains signals that deserve extra checking. " +
-          "Don't share personal information or spread the claim yet. " +
-          "Look for independent, reliable sources.";
-
-      } else {
-
-        title.textContent =
-          "🔎 Needs Verification";
-
-        text.textContent =
-          "TUSTIFY could not confirm this content from the information provided. " +
-          "Check the original source, date, author, evidence, and independent sources before trusting it.";
-      }
-
-      result.classList.add("show");
-
-      result.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest"
+      target.scrollIntoView({
+        behavior: "smooth"
       });
-
-    });
-
-  }
-
-
-  /* =========================
-     LEARN HUB
-     ========================= */
-
-  document.querySelectorAll(".lesson").forEach(card => {
-
-    const lessonButton =
-      card.querySelector("button");
-
-    const lessonId =
-      card.dataset.lesson;
-
-    if (!lessonButton || !lessonId) return;
-
-    lessonButton.addEventListener("click", () => {
-
-      const lesson = lessons[lessonId];
-
-      if (!lesson) return;
-
-      alert(
-        lesson.title +
-        "\n\n" +
-        lesson.text
-      );
 
     });
 
   });
 
 
-  /* =========================
-     LEVEL SYSTEM
-     ========================= */
+/* =========================================================
+   DARK MODE
+========================================================= */
 
-  function getLevel(xp) {
+const themeToggle =
+  document.querySelector(".theme-toggle");
 
-    if (xp >= 1500) return 5;
-    if (xp >= 900) return 4;
-    if (xp >= 500) return 3;
-    if (xp >= 200) return 2;
+if (themeToggle) {
 
-    return 1;
+  const savedTheme =
+    localStorage.getItem("tustifyTheme");
+
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark-mode");
   }
 
+  themeToggle.addEventListener("click", () => {
 
-  /* =========================
-     BADGES
-     ========================= */
+    document.body.classList.toggle("dark-mode");
 
-  function updateBadges() {
+    const isDark =
+      document.body.classList.contains("dark-mode");
 
-    const completed =
-      user.completedChallenges.length;
+    localStorage.setItem(
+      "tustifyTheme",
+      isDark ? "dark" : "light"
+    );
 
-    const badgeRules = [
-      {
-        name: "Verification Rookie",
-        condition: completed >= 1
-      },
-      {
-        name: "Fact Checker",
-        condition: completed >= 2
-      },
-      {
-        name: "Trust Defender",
-        condition: completed >= 3
-      },
-      {
-        name: "Critical Thinker",
-        condition: user.xp >= 300
-      },
-      {
-        name: "TUSTIFY Master",
-        condition: user.xp >= 450
-      }
-    ];
-
-    user.badges = badgeRules
-      .filter(badge => badge.condition)
-      .map(badge => badge.name);
-
-    saveUser();
-  }
+  });
+}
 
 
-  /* =========================
-     PROFILE
-     ========================= */
+/* =========================================================
+   HERO VERIFY BUTTON
+========================================================= */
 
-  function updateProfile() {
+const heroVerifyButton =
+  document.querySelector("[data-hero-verify]");
 
-    updateBadges();
+if (heroVerifyButton) {
 
-    const level =
-      getLevel(user.xp);
+  heroVerifyButton.addEventListener("click", () => {
 
-    const profileName =
-      document.getElementById("profileName");
+    const verifySection =
+      document.querySelector("#verify");
 
-    const xpValue =
-      document.getElementById("xpValue");
+    if (verifySection) {
 
-    const levelValue =
-      document.getElementById("levelValue");
-
-    const badgeValue =
-      document.getElementById("badgeValue");
-
-    const progressText =
-      document.getElementById("progressText");
-
-    const progressBar =
-      document.getElementById("progressBar");
-
-    if (profileName) {
-      profileName.textContent =
-        user.name || "Guest";
-    }
-
-    if (xpValue) {
-      xpValue.textContent =
-        user.xp;
-    }
-
-    if (levelValue) {
-      levelValue.textContent =
-        "Level " + level;
-    }
-
-    if (badgeValue) {
-      badgeValue.textContent =
-        user.badges.length;
-    }
-
-    const nextLevelXP = {
-      1: 200,
-      2: 500,
-      3: 900,
-      4: 1500,
-      5: 1500
-    };
-
-    const currentTarget =
-      nextLevelXP[level];
-
-    let progress = 100;
-
-    if (level < 5) {
-      const previousTarget = {
-        1: 0,
-        2: 200,
-        3: 500,
-        4: 900
-      }[level];
-
-      progress =
-        ((user.xp - previousTarget) /
-        (currentTarget - previousTarget)) * 100;
-
-      progress =
-        Math.max(0, Math.min(100, progress));
-    }
-
-    if (progressBar) {
-      progressBar.style.width =
-        progress + "%";
-    }
-
-    if (progressText) {
-
-      if (level >= 5) {
-        progressText.textContent =
-          "Maximum level reached 🎉";
-      } else {
-        progressText.textContent =
-          user.xp +
-          " XP / " +
-          currentTarget +
-          " XP";
-      }
-
-    }
-
-    const badgesGrid =
-      document.getElementById("badgesGrid");
-
-    if (badgesGrid) {
-
-      badgesGrid.innerHTML = "";
-
-      const allBadges = [
-        "Verification Rookie",
-        "Fact Checker",
-        "Trust Defender",
-        "Critical Thinker",
-        "TUSTIFY Master"
-      ];
-
-      allBadges.forEach(badgeName => {
-
-        const badge =
-          document.createElement("div");
-
-        badge.className =
-          "badge";
-
-        if (user.badges.includes(badgeName)) {
-          badge.classList.add("unlocked");
-        }
-
-        badge.textContent =
-          user.badges.includes(badgeName)
-            ? "🏆 " + badgeName
-            : "🔒 " + badgeName;
-
-        badgesGrid.appendChild(badge);
-
+      verifySection.scrollIntoView({
+        behavior: "smooth"
       });
 
     }
 
-  }
+  });
+}
 
 
-  /* =========================
-     CHALLENGES
-     ========================= */
+/* =========================================================
+   VERIFY TYPE BUTTONS
+========================================================= */
 
-  document.querySelectorAll("[data-challenge]").forEach(card => {
+document
+  .querySelectorAll("[data-verify-type]")
+  .forEach(button => {
 
-    const challengeId =
-      card.dataset.challenge;
+    button.addEventListener("click", () => {
+
+      const type =
+        button.dataset.verifyType;
+
+      const input =
+        document.querySelector("#verifyInput");
+
+      if (!input) return;
+
+      if (type === "link") {
+
+        input.placeholder =
+          "Paste a suspicious link here...";
+
+      }
+
+      if (type === "news") {
+
+        input.placeholder =
+          "Paste a news headline or text...";
+
+      }
+
+      if (type === "image") {
+
+        input.placeholder =
+          "Describe the image or claim...";
+
+      }
+
+      input.focus();
+
+    });
+
+  });
+
+
+/* =========================================================
+   VERIFY ENGINE
+========================================================= */
+
+const verifyButton =
+  document.querySelector("#verifyButton");
+
+if (verifyButton) {
+
+  verifyButton.addEventListener("click", () => {
+
+    const input =
+      document.querySelector("#verifyInput");
+
+    const result =
+      document.querySelector("#verifyResult");
+
+    if (!input || !result) return;
+
+    const value =
+      input.value.trim();
+
+    if (!value) {
+
+      result.innerHTML =
+        "<p>Please enter something to verify.</p>";
+
+      result.classList.add("show");
+
+      return;
+    }
+
+
+    const suspiciousWords = [
+      "free",
+      "urgent",
+      "winner",
+      "click",
+      "password",
+      "giveaway",
+      "congratulations",
+      "limited",
+      "breaking"
+    ];
+
+    const lowerValue =
+      value.toLowerCase();
+
+    const suspicious =
+      suspiciousWords.some(word =>
+        lowerValue.includes(word)
+      );
+
+
+    if (suspicious) {
+
+      result.innerHTML = `
+        <div class="verify-warning">
+          <h3>⚠️ Be Careful</h3>
+          <p>
+            This content contains signs that
+            deserve further verification.
+          </p>
+          <p>
+            Check the source, date, author,
+            and supporting evidence before trusting it.
+          </p>
+        </div>
+      `;
+
+    } else {
+
+      result.innerHTML = `
+        <div class="verify-safe">
+          <h3>🔎 Keep Checking</h3>
+          <p>
+            No obvious warning sign was detected,
+            but you should still verify the source
+            and context.
+          </p>
+        </div>
+      `;
+
+    }
+
+    result.classList.add("show");
+
+  });
+
+}
+
+
+/* =========================================================
+   LEARN HUB
+========================================================= */
+
+document
+  .querySelectorAll(".lesson-card")
+  .forEach(card => {
 
     const button =
       card.querySelector("button");
 
-    if (!button || !challenges[challengeId]) return;
+    if (!button) return;
 
     button.addEventListener("click", () => {
 
-      if (user.completedChallenges.includes(challengeId)) {
+      const title =
+        card.querySelector("h3");
+
+      const lessonTitle =
+        title
+          ? title.textContent
+          : "This lesson";
+
+      alert(
+        "📚 " +
+        lessonTitle +
+        "\n\n" +
+        "Learn how to identify misleading information, " +
+        "check sources, and think critically before trusting content."
+      );
+
+    });
+
+  });
+
+
+/* =========================================================
+   CHALLENGES
+   FIXED VERSION
+========================================================= */
+
+document
+  .querySelectorAll(".challenge-btn")
+  .forEach(button => {
+
+    const challengeId =
+      button.dataset.challenge;
+
+    if (!challenges[challengeId]) {
+      return;
+    }
+
+
+    button.addEventListener("click", () => {
+
+      /* Already completed */
+
+      if (
+        user.completedChallenges.includes(
+          challengeId
+        )
+      ) {
 
         alert(
           "You already completed this challenge! 🎉"
@@ -519,37 +517,59 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+
       const challenge =
         challenges[challengeId];
 
-      const answer =
-        prompt(
-          challenge.question +
-          "\n\n" +
-          challenge.options
-            .map((option, index) =>
-              (index + 1) + ". " + option
-            )
-            .join("\n") +
-          "\n\nEnter the number of your answer:"
-        );
 
-      if (answer === null) return;
+      /* Build question */
+
+      const questionText =
+        challenge.question +
+        "\n\n" +
+        challenge.options
+          .map(
+            (option, index) =>
+              (index + 1) + ". " + option
+          )
+          .join("\n") +
+        "\n\nEnter the number of your answer:";
+
+
+      const answer =
+        prompt(questionText);
+
+
+      if (answer === null) {
+        return;
+      }
+
 
       const selected =
         Number(answer) - 1;
 
+
+      /* Invalid answer */
+
       if (
         selected < 0 ||
-        selected >= challenge.options.length
+        selected >= challenge.options.length ||
+        !Number.isInteger(selected)
       ) {
 
-        alert("Please choose a valid answer.");
+        alert(
+          "Please choose a valid answer."
+        );
 
         return;
       }
 
-      if (selected === challenge.answer) {
+
+      /* Correct answer */
+
+      if (
+        selected === challenge.answer
+      ) {
 
         user.xp += challenge.xp;
 
@@ -558,8 +578,11 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
         updateBadges();
+
         saveUser();
+
         updateProfile();
+
 
         alert(
           "Correct! 🎉\n\n+" +
@@ -567,11 +590,25 @@ document.addEventListener("DOMContentLoaded", () => {
           " XP"
         );
 
+
+        /* Change button */
+
+        button.textContent =
+          "Completed ✓";
+
+        button.disabled = true;
+
+        button.classList.add(
+          "completed"
+        );
+
+
       } else {
 
         alert(
           "Not quite. 🤔\n\n" +
-          "Think about checking the source and evidence before trusting information."
+          "Think about checking the source " +
+          "and evidence before trusting information."
         );
 
       }
@@ -581,84 +618,363 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 
-  /* =========================
-     SIGN UP
-     ========================= */
+/* =========================================================
+   MARK ALREADY COMPLETED CHALLENGES
+========================================================= */
 
-  const signupForm =
-    document.getElementById("signupForm");
+document
+  .querySelectorAll(".challenge-btn")
+  .forEach(button => {
 
-  if (signupForm) {
+    const challengeId =
+      button.dataset.challenge;
 
-    signupForm.addEventListener("submit", event => {
+    if (
+      user.completedChallenges.includes(
+        challengeId
+      )
+    ) {
 
-      event.preventDefault();
+      button.textContent =
+        "Completed ✓";
 
-      const nameInput =
-        signupForm.querySelector(
-          'input[name="name"]'
+      button.disabled = true;
+
+      button.classList.add(
+        "completed"
+      );
+
+    }
+
+  });
+
+
+/* =========================================================
+   SIGN UP
+========================================================= */
+
+const signupForm =
+  document.querySelector("#signupForm");
+
+if (signupForm) {
+
+  signupForm.addEventListener("submit", event => {
+
+    event.preventDefault();
+
+    const nameInput =
+      signupForm.querySelector(
+        'input[name="name"]'
+      );
+
+    const emailInput =
+      signupForm.querySelector(
+        'input[name="email"]'
+      );
+
+    const passwordInput =
+      signupForm.querySelector(
+        'input[name="password"]'
+      );
+
+
+    const name =
+      nameInput
+        ? nameInput.value.trim()
+        : "";
+
+    const email =
+      emailInput
+        ? emailInput.value.trim()
+        : "";
+
+    const password =
+      passwordInput
+        ? passwordInput.value
+        : "";
+
+
+    if (!name || !email || !password) {
+
+      alert(
+        "Please fill in all fields."
+      );
+
+      return;
+    }
+
+
+    user.name = name;
+
+    saveUser();
+
+    updateProfile();
+
+
+    alert(
+      "Account created successfully! 🎉"
+    );
+
+
+    signupForm.reset();
+
+  });
+
+}
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+const loginForm =
+  document.querySelector("#loginForm");
+
+if (loginForm) {
+
+  loginForm.addEventListener("submit", event => {
+
+    event.preventDefault();
+
+    const emailInput =
+      loginForm.querySelector(
+        'input[name="email"]'
+      );
+
+    const email =
+      emailInput
+        ? emailInput.value.trim()
+        : "";
+
+
+    if (!email) {
+
+      alert(
+        "Please enter your email."
+      );
+
+      return;
+    }
+
+
+    alert(
+      "Welcome back to TUSTIFY! 👋"
+    );
+
+
+    loginForm.reset();
+
+  });
+
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+document
+  .querySelectorAll("[data-logout]")
+  .forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      const confirmLogout =
+        confirm(
+          "Are you sure you want to log out?"
         );
 
-      const emailInput =
-        signupForm.querySelector(
-          'input[name="email"]'
-        );
+      if (!confirmLogout) {
+        return;
+      }
 
-      if (!nameInput) return;
 
-      user.name =
-        nameInput.value.trim() || "TUSTIFY User";
+      user = {
+        name: "Guest",
+        xp: 0,
+        completedChallenges: [],
+        badges: []
+      };
 
-      user.email =
-        emailInput?.value.trim() || "";
 
       saveUser();
+
       updateProfile();
 
+      updateBadges();
+
+
       alert(
-        "Welcome to TUSTIFY, " +
-        user.name +
-        "! 🎉"
+        "You have been logged out."
       );
+
+    });
+
+  });
+
+
+/* =========================================================
+   PROFILE RESET
+========================================================= */
+
+document
+  .querySelectorAll("[data-reset-progress]")
+  .forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      const confirmed =
+        confirm(
+          "Reset all your TUSTIFY progress?"
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      user.xp = 0;
+
+      user.completedChallenges = [];
+
+      user.badges = [];
+
+
+      saveUser();
+
+      updateProfile();
+
+      updateBadges();
+
 
       document
-        .getElementById("profile")
-        ?.scrollIntoView({
-          behavior: "smooth"
+        .querySelectorAll(".challenge-btn")
+        .forEach(challengeButton => {
+
+          challengeButton.disabled = false;
+
+          challengeButton.textContent =
+            "Start Challenge";
+
+          challengeButton.classList.remove(
+            "completed"
+          );
+
         });
 
-    });
-
-  }
-
-
-  /* =========================
-     LOGIN
-     ========================= */
-
-  const loginForm =
-    document.getElementById("loginForm");
-
-  if (loginForm) {
-
-    loginForm.addEventListener("submit", event => {
-
-      event.preventDefault();
 
       alert(
-        "Demo login completed. Your TUSTIFY progress is stored locally on this device."
+        "Your progress has been reset."
       );
 
     });
 
-  }
+  });
 
 
-  /* =========================
-     INITIALIZE
-     ========================= */
+/* =========================================================
+   MOBILE MENU
+========================================================= */
 
-  updateBadges();
-  updateProfile();
+const menuToggle =
+  document.querySelector(".menu-toggle");
 
-});
+const navMenu =
+  document.querySelector(".nav-menu");
+
+
+if (menuToggle && navMenu) {
+
+  menuToggle.addEventListener("click", () => {
+
+    navMenu.classList.toggle("active");
+
+  });
+
+
+  navMenu
+    .querySelectorAll("a")
+    .forEach(link => {
+
+      link.addEventListener("click", () => {
+
+        navMenu.classList.remove(
+          "active"
+        );
+
+      });
+
+    });
+
+}
+
+
+/* =========================================================
+   CLOSE ALERT / MODAL BUTTONS
+========================================================= */
+
+document
+  .querySelectorAll("[data-close]")
+  .forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      const targetId =
+        button.dataset.close;
+
+      const target =
+        document.getElementById(
+          targetId
+        );
+
+      if (target) {
+
+        target.classList.remove(
+          "show"
+        );
+
+      }
+
+    });
+
+  });
+
+
+/* =========================================================
+   CONTACT / CTA BUTTONS
+========================================================= */
+
+document
+  .querySelectorAll("[data-scroll-to]")
+  .forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      const targetId =
+        button.dataset.scrollTo;
+
+      const target =
+        document.querySelector(
+          targetId
+        );
+
+      if (!target) return;
+
+      target.scrollIntoView({
+        behavior: "smooth"
+      });
+
+    });
+
+  });
+
+
+/* =========================================================
+   FINAL INITIALIZATION
+========================================================= */
+
+updateBadges();
+
+updateProfile();
+
+saveUser();
